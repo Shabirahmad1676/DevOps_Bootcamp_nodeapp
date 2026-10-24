@@ -1,6 +1,5 @@
 name: Node.js Express CI/CD Pipeline
 
-# 1. Trigger the pipeline on pushes or pull requests to main
 on:
   push:
     branches: [ main, feat/newAPI ]
@@ -9,25 +8,21 @@ on:
 
 jobs:
   build-and-test:
-    # 2. Run on a fresh, managed Ubuntu server provided by GitHub
     runs-on: ubuntu-latest
 
     steps:
-    # 3. Pull your repository code into the runner environment
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    # 4. Set up the specific Node.js version environment
+    # Updated to Node 22 (LTS) to align with GitHub's ecosystem expectations
     - name: Setup Node.js Environment
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
 
-    # 5. Clean install exact dependencies from package-lock.json
     - name: Install Dependencies
       run: npm ci
 
-    # 6. Execute the automated test command we configured earlier
     - name: Run Integration Tests
       run: npm test
