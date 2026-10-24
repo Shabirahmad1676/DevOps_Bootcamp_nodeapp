@@ -2,19 +2,17 @@ name: Node.js Express CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, feat/newAPI ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    # Updated to Node 22 (LTS) to align with GitHub's ecosystem expectations
     - name: Setup Node.js Environment
       uses: actions/setup-node@v4
       with:
@@ -26,3 +24,36 @@ jobs:
 
     - name: Run Integration Tests
       run: npm test
+
+  # ---- NEW AUTOMATED DEPLOYMENT TO AWS EC2 JOB ----
+  deploy:
+    needs: build-and-test # Only runs if the test job passes perfectly!
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Execute Remote SSH Commands to Deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Navigate to project app directory
+          cd ~/apps/node-express-server
+          
+          # Initialize git repository if it doesn't exist yet on the server
+          if [ ! -d ".git" ]; then
+            git clone https://github.com{{ github.repository }}.git .
+          else
+            git fetch --all
+            git reset --hard origin/main
+          fi
+          
+          # Install production packages cleanly
+          npm ci --production
+          
+          # Start or reload your live application server seamlessly using PM2
+          pm2 interact delete server || true
+          pm2 start server.js --name "node-express-server"
+          pm2 save
