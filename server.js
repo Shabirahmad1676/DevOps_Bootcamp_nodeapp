@@ -52,7 +52,11 @@ app.get('/api/price', (req, res) => {
     res.json({
         success: true,
         ticker: "BTC/USD",
+<<<<<<< HEAD
         price: 10000,
+=======
+        price: 12000.25,
+>>>>>>> feat/newApi
         currency: "USD",
         updated_at: new Date().toISOString()
     });
