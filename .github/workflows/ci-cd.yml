@@ -44,10 +44,10 @@ jobs:
           mkdir -p ~/apps/node-express-server
           cd ~/apps/node-express-server
           
-          # 2. Force clone the repository cleanly into the current directory
-          git clone "https://github.com{{ github.repository }}.git" .
+          # 2. Clone using your literal repository path to avoid script syntax breaks
+          git clone "https://github.com" .
           
-          # 3. Double-check if server.js actually downloaded successfully
+          # 3. Verify if server.js successfully downloaded
           if [ ! -f "server.js" ]; then
             echo "CRITICAL ERROR: server.js was not cloned!"
             exit 1
@@ -56,7 +56,9 @@ jobs:
           # 4. Clean install production packages
           npm install --production
           
-          # 5. Reset application process states seamlessly under PM2
+          # 5. Reset application process states under PM2
           pm2 delete "node-express-server" || true
           pm2 start server.js --name "node-express-server"
           pm2 save
+
+        
