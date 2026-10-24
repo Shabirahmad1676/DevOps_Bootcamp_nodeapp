@@ -27,7 +27,7 @@ jobs:
 
   # ---- NEW AUTOMATED DEPLOYMENT TO AWS EC2 JOB ----
   deploy:
-    needs: build-and-test # Only runs if the test job passes perfectly!
+    needs: build-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
 
@@ -39,21 +39,27 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # Navigate to project app directory
+          # 1. Force load the user shell profile to pull node, npm, and pm2 into the path
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+          # 2. Ensure target structural directory paths exist safely
+          mkdir -p ~/apps/node-express-server
           cd ~/apps/node-express-server
-          
-          # Initialize git repository if it doesn't exist yet on the server
+
+          # 3. Handle pristine repository cloning vs pulling updates
           if [ ! -d ".git" ]; then
-            git clone https://github.com{{ DevOps_Bootcamp_nodeapp }}.git .
+            git clone "https://github.com{{ github.repository }}.git" .
           else
             git fetch --all
             git reset --hard origin/main
           fi
-          
-          # Install production packages cleanly
+
+          # 4. Run application setup safely with paths explicitly loaded
           npm ci --production
           
-          # Start or reload your live application server seamlessly using PM2
-          pm2 interact delete server || true
+          # 5. Application state management via pm2
+          pm2 delete "node-express-server" || true
           pm2 start server.js --name "node-express-server"
           pm2 save
