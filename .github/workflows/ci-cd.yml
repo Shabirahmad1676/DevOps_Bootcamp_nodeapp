@@ -39,27 +39,24 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # 1. Force load the user shell profile to pull node, npm, and pm2 into the path
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
-          # 2. Ensure target structural directory paths exist safely
+          # 1. Wipe any existing partial data and recreate the folder fresh
+          rm -rf ~/apps/node-express-server
           mkdir -p ~/apps/node-express-server
           cd ~/apps/node-express-server
-
-          # 3. Handle pristine repository cloning vs pulling updates
-          if [ ! -d ".git" ]; then
-            git clone "https://github.com{{ github.repository }}.git" .
-          else
-            git fetch --all
-            git reset --hard origin/main
-          fi
-
-          # 4. Run application setup safely with paths explicitly loaded
-          npm ci --production
           
-          # 5. Application state management via pm2
+          # 2. Force clone the repository cleanly into the current directory
+          git clone "https://github.com{{ github.repository }}.git" .
+          
+          # 3. Double-check if server.js actually downloaded successfully
+          if [ ! -f "server.js" ]; then
+            echo "CRITICAL ERROR: server.js was not cloned!"
+            exit 1
+          fi
+          
+          # 4. Clean install production packages
+          npm install --production
+          
+          # 5. Reset application process states seamlessly under PM2
           pm2 delete "node-express-server" || true
           pm2 start server.js --name "node-express-server"
           pm2 save
