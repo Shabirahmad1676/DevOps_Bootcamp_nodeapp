@@ -48,6 +48,16 @@ app.get('/', (req, res) => {
     });
 });
 
+app.get('/api/price', (req, res) => {
+    res.json({
+        success: true,
+        ticker: "BTC/USD",
+        price: 98500.25,
+        currency: "USD",
+        updated_at: new Date().toISOString()
+    });
+});
+
 app.get("/api/health", (req, res) => {
     res.json({ status: "ok", server: os.hostname(), node: process.version });
 });
